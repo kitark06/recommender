@@ -56,7 +56,7 @@ public class EruditeOptimized extends Configured implements Tool
 	{
 		Job job = Job.getInstance(getConf());
 
-		job.setJobName("Phase 1 - Optimized");
+		job.setJobName("Phase 1");
 
 		job.setJarByClass(EruditeOptimized.class);
 		job.setMapperClass(LikeStreamMapper.class);
@@ -69,7 +69,7 @@ public class EruditeOptimized extends Configured implements Tool
 		job.setSortComparatorClass(MediaIDSecondarySorter.class);
 		job.setGroupingComparatorClass(MediaIDGrouper.class);
 
-		job.setNumReduceTasks(1);
+		job.setNumReduceTasks(5);
 
 		Path in = new Path(phaseOneInput);
 		FileInputFormat.addInputPath(job, in);
@@ -91,7 +91,7 @@ public class EruditeOptimized extends Configured implements Tool
 	{
 		Job job = Job.getInstance(getConf());
 
-		job.setJobName("Phase 2 - Optimized");
+		job.setJobName("Phase 2");
 		job.setJarByClass(EruditeOptimized.class);
 		job.setMapperClass(PermutationGeneratorMapper.class);
 
@@ -101,7 +101,7 @@ public class EruditeOptimized extends Configured implements Tool
 		// job.setCombinerClass(GraphEdgeWeightReducer.class);
 		job.setReducerClass(GraphEdgeWeightReducer.class);
 
-		job.setNumReduceTasks(4);
+		job.setNumReduceTasks(5);
 
 		Path in = new Path(phaseTwoInput);
 		FileInputFormat.addInputPath(job, in);
@@ -122,7 +122,7 @@ public class EruditeOptimized extends Configured implements Tool
 	{
 		Job job = Job.getInstance(getConf());
 
-		job.setJobName("Phase 3 - Optimized");
+		job.setJobName("Phase 3");
 		job.setJarByClass(EruditeOptimized.class);
 		job.setMapperClass(GraphEdgeSplitMapper.class);
 
@@ -135,7 +135,7 @@ public class EruditeOptimized extends Configured implements Tool
 
 		job.setReducerClass(GraphPlotterReducer.class);
 
-		job.setNumReduceTasks(1);
+		job.setNumReduceTasks(5);
 
 		Path in = new Path(phaseThreeInput);
 		FileInputFormat.addInputPath(job, in);
@@ -165,9 +165,9 @@ public class EruditeOptimized extends Configured implements Tool
 
 		masterMind.addJob(phase2);
 
-		/*ControlledJob phase3 = getPhaseThreeJob();
+		ControlledJob phase3 = getPhaseThreeJob();
 		phase3.addDependingJob(phase2);
-		masterMind.addJob(phase3);*/
+		masterMind.addJob(phase3);
 
 		new Timer().schedule(new TimerTask()
 		{
@@ -225,16 +225,16 @@ public class EruditeOptimized extends Configured implements Tool
 		System.setProperty("HADOOP_USER_NAME", "cloudera");
 
 
-		String phaseOneLoadInput = "/user/${mapreduce.job.user.name}/recommendeer/LoadInput";
+		String phaseOneLoadInput = "/user/${mapreduce.job.user.name}/recommender/LoadInput";
 		phaseOneInput = phaseOneLoadInput;
-		// phaseOneInput = "/user/${mapreduce.job.user.name}/recommendeer/input";
-		phaseOneOutput = "/user/${mapreduce.job.user.name}/recommendeer/output";
+		// phaseOneInput = "/user/${mapreduce.job.user.name}/recommender/input";
+		phaseOneOutput = "/user/${mapreduce.job.user.name}/recommender/output";
 
 		phaseTwoInput = phaseOneOutput;
-		phaseTwoOutput = "/user/${mapreduce.job.user.name}/recommendeer/outputPhase2";
+		phaseTwoOutput = "/user/${mapreduce.job.user.name}/recommender/outputPhase2";
 
 		phaseThreeInput = phaseTwoOutput;
-		phaseThreeOutput = "/user/${mapreduce.job.user.name}/recommendeer/outputPhase3";
+		phaseThreeOutput = "/user/${mapreduce.job.user.name}/recommender/outputPhase3";
 
 		Configuration conf = new Configuration();
 
@@ -242,16 +242,22 @@ public class EruditeOptimized extends Configured implements Tool
 		conf.set("dfs.client.use.datanode.hostname", "true");
 
 		// Setting custom JDK version for the containers .. JDK 1.8
-		String javaHome = "JAVA_HOME=/usr/java/jdk1.8.0_151";
+		/*String javaHome = "JAVA_HOME=/usr/java/jdk1.8.0_151";
 		conf.set("mapreduce.map.env", javaHome);
 		conf.set("mapreduce.reduce.env", javaHome);
-		conf.set("yarn.app.mapreduce.am.env", javaHome);
+		conf.set("yarn.app.mapreduce.am.env", javaHome);*/
 
 		/*// Compression settings to optimize job
 		conf.set("mapreduce.compress.map.output", "true");
 		conf.set("mapreduce.map.output.compression.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.compress", "true");
 		conf.set("mapreduce.output.compression.codec", "org.apache.hadoop.io.compress.SnappyCodec");*/
+		
+		// Compression settings to optimize job
+		conf.set("mapreduce.map.output.compress", "false");
+//		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+		conf.set("mapreduce.output.fileoutputformat.compress", "false");
+//		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 
 		ToolRunner.run(conf, new EruditeOptimized(), args);
 	}
