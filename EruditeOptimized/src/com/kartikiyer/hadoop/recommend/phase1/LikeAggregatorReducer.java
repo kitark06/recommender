@@ -25,7 +25,7 @@ public class LikeAggregatorReducer extends Reducer<TextCompositeWritable, Text, 
 		StringBuilder builder = new StringBuilder("");
 
 		/*
-		 *  input has repetitions which can cause incorrect grouping in the latest stages
+		 *  input has repetitions which can cause incorrect grouping in the later stages
 		 *  Since the input comes from mapper, its already sorted and 
 		 *  hence checking current value with prev and adding that to make sure 
 		 *  that only distinct elements are passed through.
