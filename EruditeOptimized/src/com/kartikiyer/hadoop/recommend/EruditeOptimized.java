@@ -51,12 +51,14 @@ public class EruditeOptimized extends Configured implements Tool
 
 	private static String	phaseThreeInput;
 	private static String	phaseThreeOutput;
+	
+	static int numberOfReducers = 5;
 
 	public ControlledJob getPhaseOneJob() throws IOException
 	{
 		Job job = Job.getInstance(getConf());
 
-		job.setJobName("Phase 1");
+		job.setJobName("Phase 1 - optimized");
 
 		job.setJarByClass(EruditeOptimized.class);
 		job.setMapperClass(LikeStreamMapper.class);
@@ -69,7 +71,7 @@ public class EruditeOptimized extends Configured implements Tool
 		job.setSortComparatorClass(MediaIDSecondarySorter.class);
 		job.setGroupingComparatorClass(MediaIDGrouper.class);
 
-		job.setNumReduceTasks(5);
+		job.setNumReduceTasks(numberOfReducers);
 
 		Path in = new Path(phaseOneInput);
 		FileInputFormat.addInputPath(job, in);
@@ -91,17 +93,17 @@ public class EruditeOptimized extends Configured implements Tool
 	{
 		Job job = Job.getInstance(getConf());
 
-		job.setJobName("Phase 2");
+		job.setJobName("Phase 2 - optimized");
 		job.setJarByClass(EruditeOptimized.class);
 		job.setMapperClass(PermutationGeneratorMapper.class);
 
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(LongWritable.class);
 
-		// job.setCombinerClass(GraphEdgeWeightReducer.class);
+//		job.setCombinerClass(GraphEdgeWeightReducer.class);
 		job.setReducerClass(GraphEdgeWeightReducer.class);
 
-		job.setNumReduceTasks(5);
+		job.setNumReduceTasks(numberOfReducers);
 
 		Path in = new Path(phaseTwoInput);
 		FileInputFormat.addInputPath(job, in);
@@ -122,7 +124,7 @@ public class EruditeOptimized extends Configured implements Tool
 	{
 		Job job = Job.getInstance(getConf());
 
-		job.setJobName("Phase 3");
+		job.setJobName("Phase 3 - optimized");
 		job.setJarByClass(EruditeOptimized.class);
 		job.setMapperClass(GraphEdgeSplitMapper.class);
 
@@ -135,7 +137,7 @@ public class EruditeOptimized extends Configured implements Tool
 
 		job.setReducerClass(GraphPlotterReducer.class);
 
-		job.setNumReduceTasks(5);
+		job.setNumReduceTasks(numberOfReducers);
 
 		Path in = new Path(phaseThreeInput);
 		FileInputFormat.addInputPath(job, in);
@@ -155,7 +157,7 @@ public class EruditeOptimized extends Configured implements Tool
 	@Override
 	public int run(String[] args) throws IOException
 	{
-		final JobControl masterMind = new JobControl("MasterMind - Optimized");
+		final JobControl masterMind = new JobControl("MasterMind - optimized");
 
 		ControlledJob phase1 = getPhaseOneJob();
 		masterMind.addJob(phase1);
@@ -225,9 +227,8 @@ public class EruditeOptimized extends Configured implements Tool
 		System.setProperty("HADOOP_USER_NAME", "cloudera");
 
 
-		String phaseOneLoadInput = "/user/${mapreduce.job.user.name}/recommender/LoadInput";
-		phaseOneInput = phaseOneLoadInput;
-		// phaseOneInput = "/user/${mapreduce.job.user.name}/recommender/input";
+		phaseOneInput = "/user/${mapreduce.job.user.name}/recommender/LoadInput";;
+//		phaseOneInput = "/user/${mapreduce.job.user.name}/recommender/input";
 		phaseOneOutput = "/user/${mapreduce.job.user.name}/recommender/output";
 
 		phaseTwoInput = phaseOneOutput;
@@ -247,17 +248,11 @@ public class EruditeOptimized extends Configured implements Tool
 		conf.set("mapreduce.reduce.env", javaHome);
 		conf.set("yarn.app.mapreduce.am.env", javaHome);*/
 
-		/*// Compression settings to optimize job
-		conf.set("mapreduce.compress.map.output", "true");
-		conf.set("mapreduce.map.output.compression.codec", "org.apache.hadoop.io.compress.SnappyCodec");
-		conf.set("mapreduce.output.compress", "true");
-		conf.set("mapreduce.output.compression.codec", "org.apache.hadoop.io.compress.SnappyCodec");*/
-		
 		// Compression settings to optimize job
 		conf.set("mapreduce.map.output.compress", "false");
-//		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+		conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
 		conf.set("mapreduce.output.fileoutputformat.compress", "false");
-//		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+		conf.set("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.BZip2Codec");
 
 		ToolRunner.run(conf, new EruditeOptimized(), args);
 	}
