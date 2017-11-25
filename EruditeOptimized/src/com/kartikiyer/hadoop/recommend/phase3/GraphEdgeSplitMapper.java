@@ -10,9 +10,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 import com.kartikiyer.hadoop.recommend.phase2.PermutationGeneratorMapper;
 
 
-public class GraphEdgeSplitMapper extends Mapper<LongWritable, Text, NodePairWritable, Text>
+public class GraphEdgeSplitMapper extends Mapper<LongWritable, Text, NodePairWritable, NodePairWritable>
 {
-	NodePairWritable compositeKey = new NodePairWritable();
+	private NodePairWritable compositeKey = new NodePairWritable();
 				
 	@Override
 	public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException
@@ -27,9 +27,9 @@ public class GraphEdgeSplitMapper extends Mapper<LongWritable, Text, NodePairWri
 		Long weight = Long.parseLong(line.split("\t")[1]);
 
 		compositeKey.set(sourceNode,destinationNode,weight);
-		context.write(compositeKey, value);
+		context.write(compositeKey, compositeKey);
 		
 		compositeKey.set(destinationNode,sourceNode,weight);
-		context.write(compositeKey, value);
+		context.write(compositeKey, compositeKey);
 	}
 }

@@ -19,8 +19,6 @@ public class NodePairWritable implements WritableComparable<NodePairWritable>
 	private Text			destinationNode		= new Text();
 	private LongWritable	edgeWeight			= new LongWritable();
 
-	final String			DIRECTED_NODE_DELIMITER	= "~";
-
 	public NodePairWritable()
 	{
 		set(new Text(), new Text(), new LongWritable());

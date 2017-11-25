@@ -2,8 +2,13 @@ package com.kartikiyer.hadoop.recommend.io;
 
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -14,16 +19,15 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
 
-import com.kartikiyer.hadoop.recommend.phase2.PermutationGeneratorMapper;
-
 
 public class TextToMapFileOperations
 {
 	private FileSystem		fs;
 	private Path			mapFileDir;
 	private Configuration	conf;
+	private LongWritable	key = new LongWritable();
 
-	public TextToMapFileOperations() throws IOException
+	public TextToMapFileOperations(Path mapFileDir) throws IOException
 	{
 		System.setProperty("hadoop.home.dir", "C:\\winutils-master\\hadoop-2.7.1");
 		System.setProperty("HADOOP_USER_NAME", "cloudera");
@@ -31,13 +35,14 @@ public class TextToMapFileOperations
 		conf = new Configuration();
 		fs = FileSystem.get(conf);
 
-		mapFileDir = new Path("/user/cloudera/MapFiles/MovieID_Name");
+		this.mapFileDir = mapFileDir;
 	}
 
-	public void computeAndWriteMapFile() throws IOException
+
+	public void computeAndWriteMapFile(Path inputForMapFileCreation) throws IOException
 	{
-		if(fs.exists(mapFileDir))
-			fs.delete(mapFileDir,true);
+		if (fs.exists(mapFileDir))
+			fs.delete(mapFileDir, true);
 
 		// MapFile.Writer.Option extends SequenceFile.Writer.Option ... so can be given to MapFile.Writer
 		MapFile.Writer.Option keyClass = MapFile.Writer.keyClass(LongWritable.class);
@@ -46,7 +51,7 @@ public class TextToMapFileOperations
 		try (
 			MapFile.Writer mapWriter = new MapFile.Writer(conf, mapFileDir, keyClass, valueClass))
 		{
-			Path movieMetaData = new Path("/user/cloudera/recommendeer/input/Movie.txt");
+			Path movieMetaData = inputForMapFileCreation;
 			BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(movieMetaData)));
 			String line = br.readLine();
 
@@ -72,39 +77,49 @@ public class TextToMapFileOperations
 		}
 	}
 
-	public String getValue(Text movieId) throws IOException
+	public String getValue(String movieId) throws IOException
 	{
-		return getValue(new LongWritable(Long.parseLong(movieId.toString())));
+		key.set(Long.parseLong(movieId));
+		return getValue(key);
 	}
 
-	public static void main(String[] args) throws IOException, InterruptedException
+	public void replaceMovieIdsWithName(InputStream inputFileStream, Path outputFile) throws IOException
 	{
-		new TextToMapFileOperations().computeAndWriteMapFile();
-		System.out.println(new TextToMapFileOperations().getValue(new LongWritable(765L)));
-	}
-	
-	private void replaceMovieIdsWithName(String file)
-	{
-		Path inputFile = new Path(file);
-		
-		/*inputFile.
-		
-		
-		StringBuilder recommendations = new StringBuilder(); 
-		for (Text destination : values)
+		// files can be compressed , so better the caller decide and decompress the file if needed and provide an InputStream rather than hardcoding that in this method
+		// InputStream stream = fs.open(inputFile);
+		// BZip2CompressorInputStream stream = new BZip2CompressorInputStream(fs.open(inputFile));
+		BufferedReader br = new BufferedReader(new InputStreamReader(inputFileStream));
+
+		BufferedWriter bw;
+
+		if (fs.exists(outputFile) == false)
+			bw = new BufferedWriter(new OutputStreamWriter(fs.create(outputFile)));
+		else
+			bw = new BufferedWriter(new OutputStreamWriter(fs.append(outputFile)));
+
+		// grabs and returns the contentID in the following pattern "[contentID,numericFrequency]" and replaces it with the movie/contentName in one go ..
+		String regex = "(?<=\\[)[^,\\]]+";
+		Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+
+		LongWritable key = new LongWritable();
+
+		String line;
+		while ((line = br.readLine()) != null)
 		{
-			String line = destination.toString();
-			
-			System.out.println("-->"+destination+"<--");
-			String[] nodePair = line.split("\t")[0].split("\\"+PermutationGeneratorMapper.DIRECTED_NODE_DELIMITER);
-			String edgeWeigth = line.split("\t")[1];
-			
-			recommendations.append("[" + map.getValue(new Text(nodePair[1]))+ "," + edgeWeigth + "] ,");
+			String source = line.split("\t")[0];
+			String recommendations = line.split("\t")[1];
+
+			Matcher matcher = pattern.matcher(recommendations);
+
+			StringBuffer sb = new StringBuffer();
+			while (matcher.find())
+				matcher.appendReplacement(sb, getValue(matcher.group(0)));
+
+			matcher.appendTail(sb);
+
+			bw.write(getValue(source) + " --> " + sb + "\n");
+			bw.flush();
 		}
-		
-		recommendations.setLength(recommendations.length()-1);
-		
-		context.write(new Text(map.getValue(key.getSourceNode())), new Text(recommendations.toString()));*/
+		bw.close();
 	}
-	
 }

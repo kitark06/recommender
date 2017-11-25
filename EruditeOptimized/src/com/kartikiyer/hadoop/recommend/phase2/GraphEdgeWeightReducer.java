@@ -17,7 +17,7 @@ public class GraphEdgeWeightReducer extends Reducer<Text, LongWritable, Text, Lo
 	{
 		long edgeCount = 0;
 		for (LongWritable value : weight)
-			edgeCount += 1;
+			edgeCount += value.get();
 		totalWeight.set(edgeCount);
 
 		context.write(directedNode, totalWeight);

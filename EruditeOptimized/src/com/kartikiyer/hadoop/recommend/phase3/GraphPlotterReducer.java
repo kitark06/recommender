@@ -9,15 +9,15 @@ import org.apache.hadoop.mapreduce.Reducer;
 import com.kartikiyer.hadoop.recommend.phase2.PermutationGeneratorMapper;
 
 
-public class GraphPlotterReducer extends Reducer<NodePairWritable, Text, Text, Text>
+public class GraphPlotterReducer extends Reducer<NodePairWritable, NodePairWritable, Text, Text>
 {
 	Text	keyOut	= new Text();
 	Text	valueOut	= new Text();
 
-	public void reduce(NodePairWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException
+	public void reduce(NodePairWritable key, Iterable<NodePairWritable> values, Context context) throws IOException, InterruptedException
 	{
 		StringBuilder recommendations = new StringBuilder();
-		for (Text destination : values)
+		for (NodePairWritable destination : values)
 		{
 			String line = destination.toString();
 

@@ -12,7 +12,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class PermutationGeneratorMapper extends Mapper<LongWritable, Text, Text, LongWritable>
 {
 	public final static String	DIRECTED_NODE_DELIMITER	= "~";
-	LongWritable				ONE					= new LongWritable(1);
+	private LongWritable		ONE					= new LongWritable(1);
 
 	@Override
 	protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException
@@ -23,8 +23,8 @@ public class PermutationGeneratorMapper extends Mapper<LongWritable, Text, Text,
 		ArrayList<String> nodes = new ArrayList<>();
 
 		for (int i = 0; i < values.length; i++)
-			for (int j = i+1 ; j < values.length; j++)
-//				if(i!=j)
+			for (int j = i + 1; j < values.length; j++)
+				// if(i!=j)
 				nodes.add(values[i] + DIRECTED_NODE_DELIMITER + values[j]);
 
 		for (String directedNode : nodes)
